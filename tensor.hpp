@@ -29,9 +29,15 @@ class Tensor {
         }
 
         float& operator()(size_t n, size_t c=0, size_t h=0, size_t w=0) {
-            // TODO
             // define the data layout for the Tensor
             // access the Tensor element
+            size_t pos = offset_ 
+                + n * C * H * W // go to the n-th image
+                + c * H * W // go to the c-th channel of that image
+                + h * W // go to the h-th row
+                + w // go to the w-th column
+            ;
+            return data_->at(pos);
         }
 
         Tensor slice(size_t idx, size_t num) {
