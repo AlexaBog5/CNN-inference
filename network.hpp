@@ -328,7 +328,29 @@ class SoftMax : public Layer {
 class Flatten : public Layer {
     public:
         Flatten() : Layer(LayerType::Flatten) {}
-    // TODO
+    
+        void fwd() override {
+            output_ = Tensor(input_.N, input_.C * input_.H * input_.W, 1, 1);
+            // for each value
+            for (size_t n = 0; n < input_.N; ++n) {
+                for (size_t c = 0; c < input_.C; ++c) {
+                    for (size_t h = 0; h < input_.H; ++h) {
+                        for (size_t w = 0; w < input_.W; ++w) {
+                            // copy value form the input array to the right position in the output array
+                            output_(n, c * input_.H * input_.W + h * input_.W + w, 1, 1) = input_(n, c, h, w);
+                        }
+                    }
+                }
+            }
+        }
+
+        void read_weights_bias(std::ifstream& is) override {
+            return;
+        }
+    private:
+        bool check_input(const Tensor& input) override {
+            return true; 
+        }
 };
 
 
