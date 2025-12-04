@@ -253,7 +253,30 @@ class MaxPool2d : public Layer {
 class ReLu : public Layer {
     public:
         ReLu() : Layer(LayerType::ReLu) {}
-    // TODO
+    
+        void fwd() override {
+            output_ = Tensor(input_.N, input_.C, input_.H, input_.W);
+            // for each value
+            for (size_t n = 0; n < input_.N; ++n) {
+                for (size_t c = 0; c < input_.C; ++c) {
+                    for (size_t h = 0; h < input_.H; ++h) {
+                        for (size_t w = 0; w < input_.W; ++w) {
+                            // 0 if negative, else keep value
+                            output_(n, c, h, w) = std::max(0.0f, input_(n, c, h, w));
+                        }
+                    }
+                }
+            }
+        }
+
+        void read_weights_bias(std::ifstream& is) override {
+            return;
+        }
+
+    private:
+        bool check_input(const Tensor& input) override {
+            return true; 
+        }
 };
 
 
