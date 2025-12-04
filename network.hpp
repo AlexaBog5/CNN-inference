@@ -185,8 +185,68 @@ class Linear : public Layer {
 
 class MaxPool2d : public Layer {
     public:
-        MaxPool2d(size_t kernel_size, size_t stride=1, size_t pad=0) : Layer(LayerType::MaxPool2d) {}
-    // TODO
+        MaxPool2d(size_t kernel_size, size_t stride=1, size_t pad=0) : Layer(LayerType::MaxPool2d) {
+            kernel_size_ = kernel_size;
+            stride_ = stride;
+            pad_ = pad;
+        }
+
+        void fwd() override {
+            if (input_.W + 2 * pad_ < kernel_size_ || input_.H + 2 * pad_ < kernel_size_)
+                throw std::runtime_error("Kernel size is larger than input dimensions in Conv2d layer");
+
+            size_t output_w = (input_.W + 2 * pad_ - kernel_size_) / stride_ + 1;
+            size_t output_h = (input_.H + 2 * pad_ - kernel_size_) / stride_ + 1;
+            output_ = Tensor(input_.N, input_.C, output_h, output_w);
+
+            // over images
+            for (size_t n = 0; n < input_.N; ++n) {
+                // over channels
+                for (size_t c = 0; c < input_.C; ++c) {
+                    // calculate output feature map
+                    for (size_t h = 0; h < output_h; ++h) {
+                        for (size_t w = 0; w < output_w; ++w) {
+                            // find max value in the kernel
+                            float curr_max = -std::numeric_limits<float>::infinity();
+                            for (size_t kh = 0; kh < kernel_size_; ++kh) {
+                                for (size_t kw = 0; kw < kernel_size_; ++kw) {
+                                    // skip padding areas
+                                    // if bellow 0
+                                    if (h * stride_ + kh < pad_ || w * stride_ + kw < pad_) {
+                                        continue;
+                                    }
+                                    size_t in_h = h * stride_ + kh - pad_;
+                                    size_t in_w = w * stride_ + kw - pad_;
+                                    // if above input dimensions
+                                    if (in_h >= input_.H || in_w >= input_.W) {
+                                        continue;
+                                    }
+                                    curr_max = std::max(curr_max, input_(n, c, in_h, in_w));
+                                }
+                            }
+                        // if all vakues are in the padding area, set to 0
+                        if (curr_max == -std::numeric_limits<float>::infinity()) {
+                            curr_max = 0.0f;
+                        }
+                        output_(n, c, h, w) = curr_max;
+                        }
+                    }
+                }
+            }
+        }
+
+        void read_weights_bias(std::ifstream& is) override {
+            return;
+        }
+
+    private:
+        size_t kernel_size_;
+        size_t stride_;
+        size_t pad_;
+
+        bool check_input(const Tensor& input) override {
+            return true; 
+        }
 };
 
 
