@@ -7,6 +7,9 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <algorithm>
+#include <limits>  
+#include <cmath> 
 
 enum class LayerType : uint8_t {
     Conv2d = 0,
@@ -283,7 +286,42 @@ class ReLu : public Layer {
 class SoftMax : public Layer {
     public:
         SoftMax() : Layer(LayerType::SoftMax) {}
-    // TODO
+
+        void fwd() override {
+            output_ = Tensor(input_.N, input_.C, input_.H, input_.W);
+            // for each value
+            for (size_t n = 0; n < input_.N; ++n) {
+                float sum_exp = 0.;
+                for (size_t c = 0; c < input_.C; ++c) {
+                    for (size_t h = 0; h < input_.H; ++h) {
+                        for (size_t w = 0; w < input_.W; ++w) {
+                            float curr_exp = std::exp(input_(n, c, h, w));
+                            sum_exp += curr_exp;
+                            // store the exponentials of the inputs in their respective positions in output
+                            output_(n, c, h, w) = curr_exp;
+                        }
+                    }
+                }
+                sum_exp = std::max(sum_exp, 1e-10f); // avoid division by zero
+                // devide each exponential by the sum of exponentials to get probabilities
+                for (size_t c = 0; c < input_.C; ++c) {
+                    for (size_t h = 0; h < input_.H; ++h) {
+                        for (size_t w = 0; w < input_.W; ++w) {
+                            output_(n, c, h, w) /= sum_exp;
+                        }
+                    }
+                }
+            }
+        }
+
+        void read_weights_bias(std::ifstream& is) override {
+            return;
+        }
+
+    private:
+        bool check_input(const Tensor& input) override {
+            return input.H == 1 && input.W == 1; // we expect a vector input
+        }
 };
 
 
