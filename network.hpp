@@ -359,20 +359,36 @@ class NeuralNetwork {
         NeuralNetwork(bool debug=false) : debug_(debug) {}
 
         void add(Layer* layer) {
-            // TODO
+            layers_.push_back(std::unique_ptr<Layer>(layer));
         }
 
         void load(std::string file) {
-            // TODO
+            // not sure - TODO
+            for (auto& layer : layers_) {
+                std::ifstream stream(file, std::ios::binary);
+                if (!stream.is_open()) {
+                    throw std::runtime_error("Could not open file: " + file);
+                }
+                layer->read_weights_bias(stream);
+            }
         }
 
         Tensor predict(Tensor input) {
-            // TODO
+            for (auto& layer : layers_) {
+                layer->set_input(input);
+                layer->fwd();
+                if (debug_) {
+                    layer->print();
+                }
+                input = layer->get_output();
+            }
+            return input;
         }
 
     private:
         bool debug_;
         // TODO: storage for layers
+        std::vector<std::unique_ptr<Layer>> layers_;
 };
 
 #endif // NETWORK_HPP
