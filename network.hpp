@@ -144,8 +144,42 @@ class Conv2d : public Layer {
 
 class Linear : public Layer {
     public:
-        Linear(size_t in_features, size_t out_features) : Layer(LayerType::Linear) {}
-    // TODO
+        Linear(size_t in_features, size_t out_features) : Layer(LayerType::Linear) {
+            in_features_ = in_features;
+            out_features_ = out_features;
+        }
+
+        void fwd() override {
+            output_ = Tensor(input_.N, out_features_, 1, 1);
+
+            // over images
+            for (size_t n = 0; n < input_.N; ++n) {
+                // over output nodes
+                for (size_t out = 0; out < out_features_; ++out) {
+                    // start with the bias
+                    float curr = bias_(out);
+                    // accumulate over input nodes
+                    for (size_t in = 0; in < in_features_; ++in) {
+                        curr += input_(n, in, 0, 0) * weights_(out, in, 0, 0);
+                    }
+                    output_(n, out, 0, 0) = curr;
+                }
+            }
+        }
+
+        void read_weights_bias(std::ifstream& is) override {
+            // TODO
+
+            // weights: (out, in, 1, 1))
+        }
+
+    private:
+        size_t in_features_;
+        size_t out_features_;
+
+        bool check_input(const Tensor& input) override {
+            return input.C == in_features_ && input.H == 1 && input.W == 1;
+        }
 };
 
 
