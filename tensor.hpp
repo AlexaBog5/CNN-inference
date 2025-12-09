@@ -49,6 +49,10 @@ class Tensor {
             return os << N << "x" << C << "x" << H << "x" << W;
         }
 
+        int size() const {
+            return N * C * H * W;
+        }
+
         size_t N, C, H, W;
 
     private:
