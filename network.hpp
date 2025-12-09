@@ -38,7 +38,19 @@ class Layer {
         Layer(LayerType layer_type) : layer_type_(layer_type), input_(), weights_(), bias_(), output_() {}
 
         virtual void fwd() = 0;
-        virtual void read_weights_bias(std::ifstream& is) = 0;
+        void read_weights_bias(std::ifstream& is) {
+            if (weights_.empty() || bias_.empty()) {
+                return;
+            }
+            is.read(reinterpret_cast<char*>(weights_.data()), weights_.size() * sizeof(float));
+            if (!is) {
+                throw std::runtime_error("Error reading weights from file");
+            }
+            is.read(reinterpret_cast<char*>(bias_.data()), bias_.size() * sizeof(float));
+            if (!is) {
+                throw std::runtime_error("Error reading bias from file");
+            }
+        }
 
         void print() {
             std::cout << layer_type_ << std::endl;
@@ -129,9 +141,6 @@ class Conv2d : public Layer {
             }
         }
 
-        void read_weights_bias(std::ifstream& is) override {
-            // TODO
-        }
     private:
         size_t in_channels_;
         size_t out_channels_;
@@ -150,6 +159,9 @@ class Linear : public Layer {
         Linear(size_t in_features, size_t out_features) : Layer(LayerType::Linear) {
             in_features_ = in_features;
             out_features_ = out_features;
+
+            weights_ = Tensor(out_features_, in_features_, 1, 1);
+            bias_ = Tensor(out_features_);
         }
 
         void fwd() override {
@@ -168,12 +180,6 @@ class Linear : public Layer {
                     output_(n, out, 0, 0) = curr;
                 }
             }
-        }
-
-        void read_weights_bias(std::ifstream& is) override {
-            // TODO
-
-            // weights: (out, in, 1, 1))
         }
 
     private:
@@ -238,10 +244,6 @@ class MaxPool2d : public Layer {
             }
         }
 
-        void read_weights_bias(std::ifstream& is) override {
-            return;
-        }
-
     private:
         size_t kernel_size_;
         size_t stride_;
@@ -270,10 +272,6 @@ class ReLu : public Layer {
                     }
                 }
             }
-        }
-
-        void read_weights_bias(std::ifstream& is) override {
-            return;
         }
 
     private:
@@ -314,10 +312,6 @@ class SoftMax : public Layer {
             }
         }
 
-        void read_weights_bias(std::ifstream& is) override {
-            return;
-        }
-
     private:
         bool check_input(const Tensor& input) override {
             return input.H == 1 && input.W == 1; // we expect a vector input
@@ -344,9 +338,6 @@ class Flatten : public Layer {
             }
         }
 
-        void read_weights_bias(std::ifstream& is) override {
-            return;
-        }
     private:
         bool check_input(const Tensor& input) override {
             return true; 
@@ -364,11 +355,11 @@ class NeuralNetwork {
 
         void load(std::string file) {
             // not sure - TODO
+            std::ifstream stream(file, std::ios::binary);
+            if (!stream.is_open()) {
+                throw std::runtime_error("Could not open file: " + file);
+            }
             for (auto& layer : layers_) {
-                std::ifstream stream(file, std::ios::binary);
-                if (!stream.is_open()) {
-                    throw std::runtime_error("Could not open file: " + file);
-                }
                 layer->read_weights_bias(stream);
             }
         }
