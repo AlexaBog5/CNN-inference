@@ -59,7 +59,6 @@ class Layer {
             if (!bias_.empty())    std::cout << "  bias: "    << bias_    << std::endl;
             if (!output_.empty())  std::cout << "  output: "  << output_  << std::endl;
         }
-        // TODO: additional required methods
 
         void set_input(const Tensor& input) {
             if (!check_input(input)) {
@@ -347,24 +346,43 @@ class Flatten : public Layer {
 
 class NeuralNetwork {
     public:
-        NeuralNetwork(bool debug=false) : debug_(debug) {}
+        NeuralNetwork(bool debug=false) : debug_(debug) {
+            if (debug_) {
+                std::cout << "Neural Network created with debug mode ON" << std::endl;
+            }
+        }
 
         void add(Layer* layer) {
+            if (debug_) {
+                std::cout << "Adding layer: " << std::endl;
+                layer->print();
+                std::cout << std::endl;
+            }
             layers_.push_back(std::unique_ptr<Layer>(layer));
         }
 
         void load(std::string file) {
-            // not sure - TODO
             std::ifstream stream(file, std::ios::binary);
             if (!stream.is_open()) {
                 throw std::runtime_error("Could not open file: " + file);
             }
+            if (debug_)
+                std::cout << "Loading weights and biases from file: " << file << std::endl;
             for (auto& layer : layers_) {
                 layer->read_weights_bias(stream);
+                if (debug_) {
+                    std::cout << "Loaded for layer: " << std::endl;
+                    layer->print();
+                    std::cout << std::endl;
+                }
             }
         }
 
         Tensor predict(Tensor input) {
+            if (debug_) {
+                std::cout << "Starting prediction with input: " << std::endl;
+                std::cout << input << std::endl;
+            }
             for (auto& layer : layers_) {
                 layer->set_input(input);
                 layer->fwd();
@@ -372,13 +390,19 @@ class NeuralNetwork {
                     layer->print();
                 }
                 input = layer->get_output();
+                if (debug_) {
+                    std::cout << "Intermediate output: " << std::endl;
+                    std::cout << input << std::endl;
+                    std::cout << "For layer: " << std::endl;
+                    layer->print();
+                    std::cout << std::endl;
+                }
             }
             return input;
         }
 
     private:
         bool debug_;
-        // TODO: storage for layers
         std::vector<std::unique_ptr<Layer>> layers_;
 };
 
