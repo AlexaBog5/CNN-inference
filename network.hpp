@@ -330,7 +330,7 @@ class Flatten : public Layer {
                     for (size_t h = 0; h < input_.H; ++h) {
                         for (size_t w = 0; w < input_.W; ++w) {
                             // copy value form the input array to the right position in the output array
-                            output_(n, c * input_.H * input_.W + h * input_.W + w, 1, 1) = input_(n, c, h, w);
+                            output_(n, c * input_.H * input_.W + h * input_.W + w, 0, 0) = input_(n, c, h, w);
                         }
                     }
                 }
@@ -384,17 +384,16 @@ class NeuralNetwork {
                 std::cout << input << std::endl;
             }
             for (auto& layer : layers_) {
-                layer->set_input(input);
-                layer->fwd();
                 if (debug_) {
+                    std::cout << "Processing layer: " << std::endl;
                     layer->print();
                 }
+                layer->set_input(input);
+                layer->fwd();
                 input = layer->get_output();
                 if (debug_) {
                     std::cout << "Intermediate output: " << std::endl;
                     std::cout << input << std::endl;
-                    std::cout << "For layer: " << std::endl;
-                    layer->print();
                     std::cout << std::endl;
                 }
             }
