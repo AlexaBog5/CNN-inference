@@ -83,6 +83,10 @@ class MNIST {
             }
         }
 
+        int N() const {
+            return imgs_.N;
+        }
+
     private:
         bool is_little_endian() {
             int n = 1;
