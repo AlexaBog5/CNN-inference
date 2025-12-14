@@ -83,7 +83,7 @@ class MNIST {
             }
         }
 
-        int N() const {
+        size_t N() const {
             return imgs_.N;
         }
 
