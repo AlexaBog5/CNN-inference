@@ -73,7 +73,7 @@ int main() {
         std::filesystem::create_directories(output_path);
 
     // init neural network
-    NeuralNetwork net(false);
+    NeuralNetwork net(TO_DEBUG);
 
     // add lenet layers
     addLayersLenet(net);
