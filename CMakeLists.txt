@@ -15,6 +15,8 @@ target_compile_definitions(lenet PRIVATE
     # paths
     WEIGHTS_LOCAL_PATH="data/data-mnist-lenet.raw"
     MNIST_LOCAL_PATH="data/data-mnist-t10k-images-idx3-ubyte"
+    # 1 - enable debug output, 0 - disable debug output
+    TO_DEBUG=0
     # 1 - save images, 0 - do not save images
     TO_SAVE_IMAGES=1
     # where to save output images (the directory will be created if it does not exist)
