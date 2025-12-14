@@ -21,9 +21,9 @@ class Tensor {
         }
 
         float* data() {
-            return data_->data();
+            return data_->data() + offset_;
         }
-
+        
         void fill(float c) {
             std::fill(data_->begin() + offset_, data_->begin() + offset_ + N * C * H * W, c);
         }
