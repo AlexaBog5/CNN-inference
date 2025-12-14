@@ -5,7 +5,26 @@
 #include "tensor.hpp"
 #include "network.hpp"
 #include "mnist.hpp"
+#include <filesystem>
 
+void saveImagePGM(const std::string& filename,
+                  Tensor& img)
+{
+    std::ofstream file(filename, std::ios::binary);
+    if (!file)
+        throw std::runtime_error("Could not open file");
+
+    // PPM header (P5 = binary)
+    file << "P5\n" << img.W << " " << img.H << "\n255\n";
+
+    auto* ptr = img.data();
+    for (size_t i = 0; i < img.size(); ++i) {
+        file << static_cast<uint8_t>(std::min(std::max(*ptr * 255.f, 0.f), 255.f));
+        ptr++;
+    }
+
+    file.close();
+}
 
 void addLayersLenet(NeuralNetwork& net) {
     // 1x32x32
@@ -38,22 +57,39 @@ void addLayersLenet(NeuralNetwork& net) {
 }
 
 int main() {
+
+    // setting argiumnets
+        // size_t num_images = 10;
+        // std::string weights_local_path = "data/data-mnist-lenet.raw";
+        // std::string mnist_local_path = "data/data-mnist-t10k-images-idx3-ubyte";
+        // std::string output_local_path = "data/output/";
+        // bool to_save_images = true;
+
+    std::filesystem::path baseDir = PROJECT_SOURCE_DIR;
+    std::string weights_file = (baseDir / WEIGHTS_LOCAL_PATH).generic_string();
+    std::string mnist_path = (baseDir / MNIST_LOCAL_PATH).generic_string();
+    std::string output_path = (baseDir / OUTPUT_LOCAL_PATH).generic_string();
+    if (TO_SAVE_IMAGES)
+        std::filesystem::create_directories(output_path);
+
     // init neural network
-    NeuralNetwork net(true);
+    NeuralNetwork net(false);
 
     // add lenet layers
     addLayersLenet(net);
 
     // load weights and biases
-    std::string weights_file = "data/data-mnist-lenet.raw";
     net.load(weights_file);
 
     // load data
-    std::string mnist_path = "data/data-mnist-t10k-images-idx3-ubyte";
     MNIST mnist(mnist_path);
 
     // for each image
-    for (size_t i = 0; i < mnist.N(); ++i) {
+    for (size_t i = 0; i < NUM_IMAGES; ++i) {
+        if (i >= mnist.N()) {
+            break;
+        }
+
         Tensor img = mnist.at(i);
 
         // predict probabilities
@@ -65,6 +101,9 @@ int main() {
         
         // just print it for now
         std::cout << "Prediction for image " << i << ": " << predicted_label << std::endl;
-        // TODO: save images + predictions ?
+
+        if (TO_SAVE_IMAGES){
+            saveImagePGM(output_path + "mnist_image_" + std::to_string(i) + "_pred_" + std::to_string(predicted_label) + ".pgm", img);
+        }
     }
 }
