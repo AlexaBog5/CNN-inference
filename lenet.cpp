@@ -14,7 +14,7 @@ void saveImagePGM(const std::string& filename,
     if (!file)
         throw std::runtime_error("Could not open file");
 
-    // PPM header (P5 = binary)
+    // PGM header (P5 = binary)
     file << "P5\n" << img.W << " " << img.H << "\n255\n";
 
     auto* ptr = img.data();
@@ -57,14 +57,7 @@ void addLayersLenet(NeuralNetwork& net) {
 }
 
 int main() {
-
-    // setting argiumnets
-        // size_t num_images = 10;
-        // std::string weights_local_path = "data/data-mnist-lenet.raw";
-        // std::string mnist_local_path = "data/data-mnist-t10k-images-idx3-ubyte";
-        // std::string output_local_path = "data/output/";
-        // bool to_save_images = true;
-
+    // set pathes that are defined in CMakeLists.txt
     std::filesystem::path baseDir = PROJECT_SOURCE_DIR;
     std::string weights_file = (baseDir / WEIGHTS_LOCAL_PATH).generic_string();
     std::string mnist_path = (baseDir / MNIST_LOCAL_PATH).generic_string();
@@ -84,7 +77,7 @@ int main() {
     // load data
     MNIST mnist(mnist_path);
 
-    // for each image
+    // for each image in range NUM_IMAGES that is set in CMakeLists.txt
     for (size_t i = 0; i < NUM_IMAGES; ++i) {
         if (i >= mnist.N()) {
             break;
@@ -99,9 +92,12 @@ int main() {
         auto* tensor_start = output.data();
         size_t predicted_label = std::distance(tensor_start, std::max_element(tensor_start, tensor_start + output.size()));
         
-        // just print it for now
+        // print the result
         std::cout << "Prediction for image " << i << ": " << predicted_label << std::endl;
 
+        // save the image with the predicted label in the filename
+        // as pgm file (it is chosen to avoid dependencies on image libraries)
+        // if TO_SAVE_IMAGES is set to true in CMakeLists.txt
         if (TO_SAVE_IMAGES){
             saveImagePGM(output_path + "mnist_image_" + std::to_string(i) + "_pred_" + std::to_string(predicted_label) + ".pgm", img);
         }
