@@ -44,7 +44,7 @@ class MNIST {
             assert(magic_number == 0x00000803 && "expected MNIST image file format");
             assert(num_rows == 28 && num_cols == 28 && "expected images of size 28x28");
 
-            imgs_ = Tensor(num_imgs, 1, 28 + 2 * pad_, 28 + 2 * pad_);
+            imgs_ = Tensor<float>(num_imgs, 1, 28 + 2 * pad_, 28 + 2 * pad_);
             if (pad_)
                 imgs_.fill(0);
             for (size_t n = 0; n < num_imgs; ++n) {
@@ -63,11 +63,11 @@ class MNIST {
             }
         }
 
-        Tensor at(size_t idx) {
+        Tensor<float> at(size_t idx) {
             return slice(idx, 1);
         }
 
-        Tensor slice(size_t idx, size_t num) {
+        Tensor<float> slice(size_t idx, size_t num) {
             assert(idx + num < imgs_.N && "index out of bounds");
             return imgs_.slice(idx, num);
         }
@@ -92,7 +92,7 @@ class MNIST {
             int n = 1;
             return *(char *)&n == 1;
         }
-        Tensor imgs_;
+        Tensor<float> imgs_;
         size_t pad_;
         std::string path_;
 };

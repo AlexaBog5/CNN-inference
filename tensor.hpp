@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 
+template<typename T>
 class Tensor {
     public:
         Tensor() : Tensor(0, 0, 0, 0) {}
@@ -12,23 +13,23 @@ class Tensor {
         Tensor(size_t n, size_t c) : Tensor(n, c, 1, 1) {}
         Tensor(size_t n, size_t c, size_t h) : Tensor(n, c, h, 1) {}
         Tensor(size_t n, size_t c, size_t h, size_t w) :
-            N(n), C(c), H(h), W(w), offset_(0), data_(std::make_shared<std::vector<float>>(n * c * h * w)) {}
-        Tensor(size_t n, size_t c, size_t h, size_t w, size_t offset, std::shared_ptr<std::vector<float>> data) :
+            N(n), C(c), H(h), W(w), offset_(0), data_(std::make_shared<std::vector<T>>(n * c * h * w)) {}
+        Tensor(size_t n, size_t c, size_t h, size_t w, size_t offset, std::shared_ptr<std::vector<T>> data) :
             N(n), C(c), H(h), W(w), offset_(offset), data_(data) {}
 
         bool empty() {
             return data_->empty();
         }
 
-        float* data() {
+        T* data() {
             return data_->data() + offset_;
         }
         
-        void fill(float c) {
+        void fill(T c) {
             std::fill(data_->begin() + offset_, data_->begin() + offset_ + N * C * H * W, c);
         }
 
-        float& operator()(size_t n, size_t c=0, size_t h=0, size_t w=0) {
+        T& operator()(size_t n, size_t c=0, size_t h=0, size_t w=0) {
             // define the data layout for the Tensor
             // access the Tensor element
             size_t pos = offset_ 
@@ -57,10 +58,11 @@ class Tensor {
 
     private:
         size_t offset_;
-        std::shared_ptr<std::vector<float>> data_;
+        std::shared_ptr<std::vector<T>> data_;
 };
 
-std::ostream& operator<<(std::ostream &os, const Tensor& t) {
+template<typename T>
+std::ostream& operator<<(std::ostream &os, const Tensor<T>& t) {
     return t.write(os);
 }
 

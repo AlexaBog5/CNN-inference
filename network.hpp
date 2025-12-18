@@ -60,24 +60,24 @@ class Layer {
             if (!output_.empty())  std::cout << "  output: "  << output_  << std::endl;
         }
 
-        void set_input(const Tensor& input) {
+        void set_input(const Tensor<float>& input) {
             if (!check_input(input)) {
-                throw std::runtime_error("Invalid input tensor shape");
+                throw std::runtime_error("Invalid input Tensor<float> shape");
             }
             input_ = input;
         }
-        Tensor get_output() const {
+        Tensor<float> get_output() const {
             return output_;
         }
 
     protected:
         const LayerType layer_type_;
-        Tensor input_;
-        Tensor weights_;
-        Tensor bias_;
-        Tensor output_;
+        Tensor<float> input_;
+        Tensor<float> weights_;
+        Tensor<float> bias_;
+        Tensor<float> output_;
 
-        virtual bool check_input(const Tensor& input) = 0;
+        virtual bool check_input(const Tensor<float>& input) = 0;
 };
 
 
@@ -90,8 +90,8 @@ class Conv2d : public Layer {
             stride_ = stride;
             pad_ = pad;
 
-            weights_ = Tensor(out_channels_, in_channels_, kernel_size_, kernel_size_);
-            bias_ = Tensor(out_channels_);
+            weights_ = Tensor<float>(out_channels_, in_channels_, kernel_size_, kernel_size_);
+            bias_ = Tensor<float>(out_channels_);
         }
     
         void fwd() override {
@@ -103,7 +103,7 @@ class Conv2d : public Layer {
 
             size_t output_w = (input_.W + 2 * pad_ - kernel_size_) / stride_ + 1;
             size_t output_h = (input_.H + 2 * pad_ - kernel_size_) / stride_ + 1;
-            output_ = Tensor(input_.N, out_channels_, output_h, output_w);
+            output_ = Tensor<float>(input_.N, out_channels_, output_h, output_w);
 
             // over images
             for (size_t n = 0; n < input_.N; ++n) {
@@ -147,7 +147,7 @@ class Conv2d : public Layer {
         size_t stride_;
         size_t pad_;
 
-        bool check_input(const Tensor& input) override {
+        bool check_input(const Tensor<float>& input) override {
             return input.C == in_channels_;
         }
 };
@@ -159,12 +159,12 @@ class Linear : public Layer {
             in_features_ = in_features;
             out_features_ = out_features;
 
-            weights_ = Tensor(out_features_, in_features_, 1, 1);
-            bias_ = Tensor(out_features_);
+            weights_ = Tensor<float>(out_features_, in_features_, 1, 1);
+            bias_ = Tensor<float>(out_features_);
         }
 
         void fwd() override {
-            output_ = Tensor(input_.N, out_features_, 1, 1);
+            output_ = Tensor<float>(input_.N, out_features_, 1, 1);
 
             // over images
             for (size_t n = 0; n < input_.N; ++n) {
@@ -185,7 +185,7 @@ class Linear : public Layer {
         size_t in_features_;
         size_t out_features_;
 
-        bool check_input(const Tensor& input) override {
+        bool check_input(const Tensor<float>& input) override {
             return input.C == in_features_ && input.H == 1 && input.W == 1;
         }
 };
@@ -205,7 +205,7 @@ class MaxPool2d : public Layer {
 
             size_t output_w = (input_.W + 2 * pad_ - kernel_size_) / stride_ + 1;
             size_t output_h = (input_.H + 2 * pad_ - kernel_size_) / stride_ + 1;
-            output_ = Tensor(input_.N, input_.C, output_h, output_w);
+            output_ = Tensor<float>(input_.N, input_.C, output_h, output_w);
 
             // over images
             for (size_t n = 0; n < input_.N; ++n) {
@@ -248,7 +248,7 @@ class MaxPool2d : public Layer {
         size_t stride_;
         size_t pad_;
 
-        bool check_input(const Tensor& input) override {
+        bool check_input(const Tensor<float>& input) override {
             return true; 
         }
 };
@@ -259,7 +259,7 @@ class ReLu : public Layer {
         ReLu() : Layer(LayerType::ReLu) {}
     
         void fwd() override {
-            output_ = Tensor(input_.N, input_.C, input_.H, input_.W);
+            output_ = Tensor<float>(input_.N, input_.C, input_.H, input_.W);
             // for each value
             for (size_t n = 0; n < input_.N; ++n) {
                 for (size_t c = 0; c < input_.C; ++c) {
@@ -274,7 +274,7 @@ class ReLu : public Layer {
         }
 
     private:
-        bool check_input(const Tensor& input) override {
+        bool check_input(const Tensor<float>& input) override {
             return true; 
         }
 };
@@ -285,7 +285,7 @@ class SoftMax : public Layer {
         SoftMax() : Layer(LayerType::SoftMax) {}
 
         void fwd() override {
-            output_ = Tensor(input_.N, input_.C, input_.H, input_.W);
+            output_ = Tensor<float>(input_.N, input_.C, input_.H, input_.W);
             // for each value
             for (size_t n = 0; n < input_.N; ++n) {
                 float sum_exp = 0.;
@@ -312,7 +312,7 @@ class SoftMax : public Layer {
         }
 
     private:
-        bool check_input(const Tensor& input) override {
+        bool check_input(const Tensor<float>& input) override {
             return input.H == 1 && input.W == 1; // we expect a vector input
         }
 };
@@ -323,7 +323,7 @@ class Flatten : public Layer {
         Flatten() : Layer(LayerType::Flatten) {}
     
         void fwd() override {
-            output_ = Tensor(input_.N, input_.C * input_.H * input_.W, 1, 1);
+            output_ = Tensor<float>(input_.N, input_.C * input_.H * input_.W, 1, 1);
             // for each value
             for (size_t n = 0; n < input_.N; ++n) {
                 for (size_t c = 0; c < input_.C; ++c) {
@@ -338,7 +338,7 @@ class Flatten : public Layer {
         }
 
     private:
-        bool check_input(const Tensor& input) override {
+        bool check_input(const Tensor<float>& input) override {
             return true; 
         }
 };
@@ -378,7 +378,7 @@ class NeuralNetwork {
             }
         }
 
-        Tensor predict(Tensor input) {
+        Tensor<float> predict(Tensor<float> input) {
             if (debug_) {
                 std::cout << "Starting prediction with input: " << std::endl;
                 std::cout << input << std::endl;

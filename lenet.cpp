@@ -8,7 +8,7 @@
 #include <filesystem>
 
 void saveImagePGM(const std::string& filename,
-                  Tensor& img)
+                  Tensor<float>& img)
 {
     std::ofstream file(filename, std::ios::binary);
     if (!file)
@@ -83,10 +83,10 @@ int main() {
             break;
         }
 
-        Tensor img = mnist.at(i);
+        Tensor<float> img = mnist.at(i);
 
         // predict probabilities
-        Tensor output = net.predict(img);
+        Tensor<float> output = net.predict(img);
 
         // find the label with the highest probability
         auto* tensor_start = output.data();
