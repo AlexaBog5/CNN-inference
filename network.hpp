@@ -42,7 +42,9 @@ class Layer {
             if (weights_.empty() || bias_.empty()) {
                 return;
             }
-            is.read(reinterpret_cast<char*>(weights_.data()), weights_.size() * sizeof(float));
+            // first read weights as floats
+            Tensor<float> float_weights(weights_.N, weights_.C, weights_.H, weights_.W);
+            is.read(reinterpret_cast<char*>(float_weights.data()), float_weights.size() * sizeof(float));
             if (!is) {
                 throw std::runtime_error("Error reading weights from file");
             }
@@ -50,6 +52,25 @@ class Layer {
             if (!is) {
                 throw std::runtime_error("Error reading bias from file");
             }
+
+            // quantization
+            float max_r = *std::max_element(float_weights.data(), float_weights.data() + float_weights.size());
+            float min_r = *std::min_element(float_weights.data(), float_weights.data() + float_weights.size());
+            float max_q = std::numeric_limits<int8_t>::max();
+            float min_q = std::numeric_limits<int8_t>::min();
+
+            scale_ = (max_r - min_r) / (max_q - min_q);
+            zero_point_ = static_cast<int8_t>(std::round(min_q - min_r / scale_));
+
+            auto* ptr = weights_.data();
+            auto* float_ptr = float_weights.data();
+            for (size_t i = 0; i < weights_.size(); ++i) {
+                *ptr++ = static_cast<int8_t>(std::round(*float_ptr++ / scale_) + zero_point_);
+            }
+        }
+
+        float get_weight_at(size_t n, size_t c, size_t h, size_t w) {
+            return scale_ * (static_cast<float>(weights_(n, c, h, w) - zero_point_));
         }
 
         void print() {
@@ -73,9 +94,13 @@ class Layer {
     protected:
         const LayerType layer_type_;
         Tensor<float> input_;
-        Tensor<float> weights_;
+        Tensor<int8_t> weights_;
         Tensor<float> bias_;
         Tensor<float> output_;
+
+        // quantization parameters
+        int8_t zero_point_ = 0;
+        float scale_ = 1.0f;
 
         virtual bool check_input(const Tensor<float>& input) = 0;
 };
@@ -90,7 +115,7 @@ class Conv2d : public Layer {
             stride_ = stride;
             pad_ = pad;
 
-            weights_ = Tensor<float>(out_channels_, in_channels_, kernel_size_, kernel_size_);
+            weights_ = Tensor<int8_t>(out_channels_, in_channels_, kernel_size_, kernel_size_);
             bias_ = Tensor<float>(out_channels_);
         }
     
@@ -129,7 +154,7 @@ class Conv2d : public Layer {
                                         if (in_h >= input_.H || in_w >= input_.W)
                                             continue;
                                         curr_conv += input_(n, in, in_h, in_w) 
-                                                    * weights_(out, in, kh, kw);
+                                                    * get_weight_at(out, in, kh, kw);
                                     }
                                 }
                             }
@@ -159,7 +184,7 @@ class Linear : public Layer {
             in_features_ = in_features;
             out_features_ = out_features;
 
-            weights_ = Tensor<float>(out_features_, in_features_, 1, 1);
+            weights_ = Tensor<int8_t>(out_features_, in_features_, 1, 1);
             bias_ = Tensor<float>(out_features_);
         }
 
@@ -174,7 +199,7 @@ class Linear : public Layer {
                     float curr = bias_(out);
                     // accumulate over input nodes
                     for (size_t in = 0; in < in_features_; ++in) {
-                        curr += input_(n, in, 0, 0) * weights_(out, in, 0, 0);
+                        curr += input_(n, in, 0, 0) * get_weight_at(out, in, 0, 0);
                     }
                     output_(n, out, 0, 0) = curr;
                 }
