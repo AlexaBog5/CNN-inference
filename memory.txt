@@ -10,4 +10,5 @@ difference: 24num_weights - 40 bit
 
 For lenet:
 num_weights = 6*1*5*5 + 16*6*5*5 + 16*5*5*120 + 120*84 + 84*10
-difference = 24 * 61470 - 40 = 1475240 bit
+num_layers = 13 (because every layer has scale and zero point)
+difference = 24 * 61470 - 40 * 13 = 1474760 bit
